@@ -1,0 +1,36 @@
+FROM python:3.10-slim
+
+# Set up working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python packages with specific versions
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+    "dask[complete]==2024.1.1" \
+    "pandas==2.1.1" \
+    "matplotlib==3.8.0" \
+    "numpy==1.26.0" \
+    "pyarrow==14.0.1" \
+    "fastparquet==2023.10.1"
+
+# Copy the processing script and data generator
+COPY process_dask.py ./
+COPY generate_sample_data.py ./
+
+# Create directories
+RUN mkdir -p /app/output
+
+# Create entrypoint script
+RUN echo '#!/bin/bash' > entrypoint.sh && \
+    echo 'set -e' >> entrypoint.sh && \
+    echo 'python generate_sample_data.py' >> entrypoint.sh && \
+    echo 'python process_dask.py' >> entrypoint.sh && \
+    chmod +x entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]
