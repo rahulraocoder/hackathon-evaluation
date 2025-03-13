@@ -14,19 +14,28 @@ def generate_sample_data(rows=100000):
         "id": np.arange(1, rows + 1),
         "value_a": np.random.rand(rows) * 100,
         "value_b": np.random.rand(rows) * 50,
-        "timestamp": pd.date_range(start="2023-01-01", periods=rows, freq="1min"),
+        # Convert timestamp to string format that Spark can handle
+        "timestamp": [pd.Timestamp(ts).strftime('%Y-%m-%d %H:%M:%S') 
+                     for ts in pd.date_range(start="2023-01-01", periods=rows, freq="1min")],
         "category": np.random.choice(["A", "B", "C", "D", "E"], size=rows),
         "is_active": np.random.choice([True, False], size=rows),
         "quantity": np.random.randint(1, 100, size=rows)
     }
     
-    # Create pandas DataFrame and save to CSV
+    # Create pandas DataFrame
     df = pd.DataFrame(data)
+    
+    # Save as CSV
     df.to_csv("sample_data.csv", index=False)
     print(f"Sample data saved to sample_data.csv")
     
-    # Create a parquet file as well (better for Spark)
-    df.to_parquet("sample_data.parquet", index=False)
+    # Save as parquet with specific timestamp handling
+    df.to_parquet(
+        "sample_data.parquet",
+        index=False,
+        engine='pyarrow',
+        compression='snappy'
+    )
     print(f"Sample data saved to sample_data.parquet")
 
 if __name__ == "__main__":
